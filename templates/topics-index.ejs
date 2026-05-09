@@ -1,0 +1,108 @@
+<!-- templates/topics-index.ejs - Template for tag/topic index pages -->
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+<%
+const tagCounts = page.meta.tagCounts || {};
+const archiveOnlyTopics = page.meta.archiveOnlyTopics || [];
+const legacyTopics = page.meta.legacyTopics || [];
+const allTags = page.meta.allTags || [];
+const tagLastDates = page.meta.tagLastDates || {};
+
+const BLOG_START_YEAR = 1996;
+const BLOG_LIFESPAN_DAYS = ((site.buildYear || new Date().getFullYear()) - BLOG_START_YEAR) * 365;
+const now = Date.now();
+function tagOpacity(lastDate) {
+  if (!lastDate) return 0.3; // no date data: floor
+  const ageDays = (now - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24);
+  const ratio = Math.min(ageDays / BLOG_LIFESPAN_DAYS, 1);
+  return Math.round((1.0 - Math.pow(ratio, 1.5) * 0.8) * 100) / 100;
+}
+
+// Build unified list: CMS tags with counts, archive-only with count 0
+const cmsTags = allTags.map(tag => ({
+  label: tag,
+  slug: slugifyFn(tag),
+  count: tagCounts[tag] || 0,
+  isArchive: false,
+  lastDate: tagLastDates[tag] || null,
+  href: `/topics/${slugifyFn(tag)}.html`
+}));
+
+const archiveTopicCounts = page.meta.archiveTopicCounts || {};
+const archiveTopicLastDates = page.meta.archiveTopicLastDates || {};
+const archiveTags = archiveOnlyTopics.map(slug => ({
+  label: slug,
+  slug: slug,
+  count: archiveTopicCounts[slug] || 0,
+  isArchive: true,
+  lastDate: archiveTopicLastDates[slug] || null,
+  href: `${site.archiveUrl}/topics/${slug}/`
+}));
+
+const hiddenTopics = (site.hiddenTopics || []).map(t => t.toLowerCase());
+const allTopics = [...cmsTags, ...archiveTags].filter(t => !hiddenTopics.includes(t.label.toLowerCase()));
+
+let sortedTopics = [];
+const byRecencyDesc = (a, b) => {
+  if (!a.lastDate && !b.lastDate) return 0;
+  if (!a.lastDate) return 1;
+  if (!b.lastDate) return -1;
+  return new Date(b.lastDate) - new Date(a.lastDate);
+};
+if (page.meta.sortOrder === 'count-desc') {
+  sortedTopics = [...allTopics].sort((a, b) => b.count - a.count || byRecencyDesc(a, b));
+} else if (page.meta.sortOrder === 'count-asc') {
+  sortedTopics = [...allTopics].sort((a, b) => a.count - b.count || byRecencyDesc(b, a));
+} else if (page.meta.sortOrder === 'alpha-desc') {
+  sortedTopics = [...allTopics].sort((a, b) => b.label.localeCompare(a.label));
+} else if (page.meta.sortOrder === 'newest') {
+  sortedTopics = [...allTopics].sort((a, b) => {
+    if (!a.lastDate && !b.lastDate) return a.label.localeCompare(b.label);
+    if (!a.lastDate) return 1;
+    if (!b.lastDate) return -1;
+    return new Date(b.lastDate) - new Date(a.lastDate);
+  });
+} else if (page.meta.sortOrder === 'oldest') {
+  sortedTopics = [...allTopics].sort((a, b) => {
+    if (!a.lastDate && !b.lastDate) return a.label.localeCompare(b.label);
+    if (!a.lastDate) return -1;
+    if (!b.lastDate) return 1;
+    return new Date(a.lastDate) - new Date(b.lastDate);
+  });
+} else {
+  // Default: alpha asc
+  sortedTopics = [...allTopics].sort((a, b) => a.label.localeCompare(b.label));
+}
+%>
+
+<section class="topics-index-page">
+  <%- include('./partials/page-header', { 
+  title: 'Topics',
+  description: 'Browse content by topic'
+  }) %>
+  
+  <nav class="sort-options" aria-label="Sort topics">
+    <span>Sort by: </span>
+    <a href="/topics/index-alpha.html" title="Alphabetically, A to Z" class="sort-link <%= page.meta.sortOrder === 'alpha' ? 'active' : '' %>">A–Z</a> |
+    <a href="/topics/index-alpha-desc.html" title="Alphabetically, Z to A" class="sort-link <%= page.meta.sortOrder === 'alpha-desc' ? 'active' : '' %>">Z–A</a> |
+    <a href="/topics/index-count-desc.html" title="Ranked by total post count" class="sort-link <%= page.meta.sortOrder === 'count-desc' ? 'active' : '' %>">Most used</a> |
+    <a href="/topics/index-count-asc.html" title="Fewest posts first" class="sort-link <%= page.meta.sortOrder === 'count-asc' ? 'active' : '' %>">Least used</a> |
+    <a href="/topics/index-newest.html" title="Fresh topics first" class="sort-link <%= page.meta.sortOrder === 'newest' ? 'active' : '' %>">Newest</a> |
+    <a href="/topics/index-oldest.html" title="Stale topics first" class="sort-link <%= page.meta.sortOrder === 'oldest' ? 'active' : '' %>">Oldest</a>
+  </nav>
+
+  <% if (sortedTopics.length === 0) { %>
+    <%- include('./partials/empty-state', { message: 'No topics found.' }) %>
+  <% } else { %>
+    <div class="tag-list">
+      <% sortedTopics.forEach(topic => { %>
+        <a href="<%= topic.href %>" rel="tag" class="tag<%= topic.isArchive ? ' tag--archive' : '' %>" style="opacity: <%= tagOpacity(topic.lastDate) %>;" title="<%= topic.count === 1 ? (topic.isArchive ? 'Only one old post tagged' : 'See the only post tagged') : (topic.count + (topic.isArchive ? ' older' : '') + ' posts tagged') %> &#8220;<%= topic.label %>&#8221;"><% if (topic.count > 0) { %><data value="<%= topic.count %>"><%= topic.label %></data><% } else { %><%= topic.label %><% } %>
+        </a>
+      <% }); %>
+    </div>
+    <% if (page.meta.sortOrder !== 'newest' && page.meta.sortOrder !== 'oldest') { %>
+      <p class="archive-topics-note">Topics with recent posts are emphasized.</p>
+    <% } %>
+  <% } %>
+</section>

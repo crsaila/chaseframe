@@ -1,0 +1,69 @@
+<!-- templates/month-archives.ejs - Template for monthly archive pages -->
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+<%
+  // Derive section prefix from page path (e.g. /columns/blog/2025/03 → /columns/blog)
+  const monthArchiveColMatch = page.path.match(/^(\/columns\/[^/]+)/);
+  const monthArchiveBase = monthArchiveColMatch ? monthArchiveColMatch[1] : '';
+%>
+
+<section class="month-archive-page">
+  <%- include('./partials/page-header', {
+    title: `<a href="${monthArchiveBase}/">${(site.columns[page.meta.columnName] && site.columns[page.meta.columnName].title) || page.meta.columnName || 'Archive'}</a> Archive`,
+    description: `All posts from <strong><time datetime="${page.meta.year}-${String(page.meta.month).padStart(2,'0')}">${page.meta.monthName}</time> <a href="${monthArchiveBase}/${page.meta.year}/"><time datetime="${page.meta.year}">${page.meta.year}</time></a></strong>`
+  }) %>
+  
+  <%
+    const _monthCount = page.meta.days ? page.meta.days.length : 0;
+    const _monthSpacing = listSpacingFn(_monthCount);
+  %>
+  <section class="month-archive" style="margin-top: <%= _monthSpacing %>rem; margin-bottom: <%= _monthSpacing %>rem;">
+    <% if (!page.meta.days || page.meta.days.length === 0) { %>
+      <%- include('./partials/empty-state', { message: 'No content found for this month.' }) %>
+    <% } else { %>
+      <% page.meta.days.forEach(day => { %>
+        <div class="month-container">
+          <h2 class="month-heading">
+            <a href="<%= monthArchiveBase %>/<%= page.meta.year %>/<%= page.meta.month.padStart(2, '0') %>/<%= day.day.padStart(2, '0') %>/">
+              <time datetime="<%= page.meta.year %>-<%= page.meta.month.padStart(2, '0') %>-<%= day.day.padStart(2, '0') %>"><%= parseInt(day.day) %></time>
+            </a>
+          </h2>
+          <div class="post-list">
+            <% day.posts.forEach(post => { %>
+              <div class="post-item">
+                <a href="<%= post.path %>.html" rel="bookmark"><%= post.meta.title %></a>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      <% }); %>
+    <% } %>
+  </section>
+  <%- include('./partials/archive-navigation', {
+    prevLink: page.meta.prevMonth ? {
+      url: `${monthArchiveBase}/${page.meta.prevMonth.year}/${page.meta.prevMonth.month}/`,
+      text: `${page.meta.prevMonth.name} ${page.meta.prevMonth.year}`
+    } : null,
+    upLink: {
+      url: `${monthArchiveBase}/${page.meta.year}/`,
+      text: page.meta.year
+    },
+    nextLink: page.meta.nextMonth ? {
+      url: `${monthArchiveBase}/${page.meta.nextMonth.year}/${page.meta.nextMonth.month}/`,
+      text: `${page.meta.nextMonth.name} ${page.meta.nextMonth.year}`
+    } : null
+  }) %>
+</section>
+<% const _mPad = String(page.meta.month).padStart(2, '0'); %>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Home", "item": "<%= site.siteUrl %>"},
+    {"@type": "ListItem", "position": 2, "name": "Archive", "item": "<%= site.siteUrl.replace(/\/$/, '') + monthArchiveBase %>/archives/"},
+    {"@type": "ListItem", "position": 3, "name": "<%= page.meta.year %>", "item": "<%= site.siteUrl.replace(/\/$/, '') + monthArchiveBase %>/<%= page.meta.year %>/"},
+    {"@type": "ListItem", "position": 4, "name": "<%= page.meta.monthName %>", "item": "<%= site.siteUrl.replace(/\/$/, '') + monthArchiveBase %>/<%= page.meta.year %>/<%= _mPad %>/"}
+  ]
+}
+</script>

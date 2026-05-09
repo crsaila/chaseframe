@@ -1,0 +1,64 @@
+<!-- templates/column-index.ejs - Column landing page showing recent entries in full blog format -->
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+
+<section class="column-index-page">
+  <%- include('./partials/page-header', { 
+    title: page.meta.title || 'Column',
+    description: page.meta.description || ''
+  }) %>
+
+  <% if (!page.meta.recentPosts || page.meta.recentPosts.length === 0) { %>
+    <%- include('./partials/empty-state', { 
+      message: 'No recent entries found.'
+    }) %>
+  <% } else { %>
+    <% page.meta.recentPosts.forEach(post => { %>
+      <%
+        const postDate = parseDateLocal(post.meta.saved_date);
+        const year = postDate.getFullYear();
+        const month = postDate.getMonth() + 1;
+        const day = postDate.getDate();
+        const monthName = monthsList[postDate.getMonth()];
+        let content = post.content;
+        if (content.indexOf('<p>') === 0) {
+          content = content.replace('<p>', '<p class="first">');
+        }
+      %>
+      <article id="<%= generateArticleIdFn(post) %>" class="article-page">
+        <header class="article-header">
+          <h1><a href="<%= post.path %>.html"><%= post.meta.title %></a></h1>
+          <% if (post.meta.saved_date) { %>
+            <p class="article-date">
+              <time datetime="<%= isoDateFn(post.meta.saved_date) %>">
+                <a href="<%= archivePathFn(post.path, year, month) %>" class="date-month-link" title="All posts from <%= monthName %> <%= year %>"><%= monthName %></a>
+                <a href="<%= archivePathFn(post.path, year, month, day) %>" class="date-day-link" title="All posts from <%= monthName %> <%= day %>, <%= year %>"><%= day %></a>,
+                <a href="<%= archivePathFn(post.path, year) %>" class="date-year-link" title="All posts from <%= year %>"><%= year %></a>
+              </time>
+            </p>
+          <% } %>
+        </header>
+        <div class="article-content">
+          <%- content %>
+        </div>
+        <%- include('./partials/metadata', { 
+          page: post, 
+          config: config, 
+          backlinks: [], 
+          slugify: slugifyFn, 
+          months: monthsList, 
+          formattedDate: formattedDateFn, 
+          isoDate: isoDateFn 
+        }) %>
+      </article>
+    <% }); %>
+  <% } %>
+
+  <nav class="post-nav">
+    <span class="post-nav-prev"></span>
+    <span class="post-nav-home"><a href="/columns/<%= page.meta.columnName %>/archives/">Full Archive</a> (<a href="/columns/<%= page.meta.columnName %>/rss.xml"><abbr title="Really Simple Syndication" aria-label="Really Simple Syndication">RSS</abbr></a>)</span>
+    <span class="post-nav-next"></span>
+  </nav>
+
+</section>

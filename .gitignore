@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Generated output
+public/
+
+# Environment
+.env
+
+# Social posting log
+published-social.json
+
+# macOS
+.DS_Store
+
+# Editor/IDE
+*.swp
+*.swo
+*~
+
+# Obsidian (content lives outside the repo)
+.obsidian/
+
+# Archive of old guide files
+_archive/
+*.bak*

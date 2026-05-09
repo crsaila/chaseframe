@@ -1,0 +1,8 @@
+<header>
+  <hgroup>
+    <% if (meta.category) { %>
+      <p class="kicker"><a href="/<%= meta.categorySlug || slugifyFn(meta.category) %>/" rel="directory"><%= meta.category %></a></p>
+    <% } %>
+    <h1><%= meta.title %></h1>
+  </hgroup>
+</header>

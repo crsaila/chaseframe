@@ -1,0 +1,56 @@
+<%
+/**
+ * Date Display Partial
+ * Consistently formats and displays dates with archive links
+ * 
+ * Parameters:
+ * - date: The date to display (required)
+ * - linkToArchive: Boolean, whether to link to archive pages (optional, default: true)
+ * - classes: String, optional CSS classes
+ * - format: String, optional format specifier (not currently used, for future expansion)
+ */
+
+// Define fallback functions if needed
+const dateDisplayFormatDate = typeof formattedDate === 'function' ? formattedDate : (
+  typeof formattedDateFn === 'function' ? formattedDateFn : function(date) {
+    if (!date) return '';
+    const d = new Date(date);
+    const monthsList = typeof months !== 'undefined' ? months : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthAbbr = monthsList[d.getMonth()].slice(0, 3) + '.';
+    const day = d.getDate();
+    const year = d.getFullYear();
+    return `${monthAbbr} ${day}, ${year}`;
+  }
+);
+
+const dateDisplayIsoDate = typeof isoDate === 'function' ? isoDate : (
+  typeof isoDateFn === 'function' ? isoDateFn : function(date) {
+    if (!date) return '';
+    return new Date(date).toISOString();
+  }
+);
+
+// Check if linking to archives - default to TRUE (changed from false)
+const shouldLink = typeof linkToArchive !== 'undefined' ? linkToArchive : true;
+const cssClasses = classes || '';
+
+if (!date) {
+  // No date provided, return empty
+  return '';
+}
+
+// Parse the date if it's not already a Date object
+const dateObj = date instanceof Date ? date : new Date(date);
+const year = dateObj.getFullYear();
+const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+const day = dateObj.getDate().toString().padStart(2, '0');
+const monthName = (typeof months !== 'undefined' ? months : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])[dateObj.getMonth()];
+%>
+
+<time datetime="<%= dateDisplayIsoDate(dateObj) %>" class="<%= cssClasses %>">
+  <% if (shouldLink) { %>
+    <a href="/<%= year %>/" class="date-year-link"><%= year %></a>-<a href="/<%= year %>/<%= month %>/" class="date-month-link"><%= monthName %></a>-<a href="/<%= year %>/<%= month %>/<%= day %>/" class="date-day-link"><%= day %></a>
+  <% } else { %>
+    <%= dateDisplayFormatDate(dateObj) %>
+  <% } %>
+</time>

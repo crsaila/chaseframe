@@ -1,0 +1,120 @@
+<%
+/**
+ * Post Item Partial
+ * Displays an article/post item consistently across different templates
+ * 
+ * Parameters:
+ * - post: The post object to display (required)
+ * - isCompact: Boolean, whether to show a compact version (optional, default: false)
+ * - headingLevel: Number, the heading level to use (optional, default: 3)
+ */
+
+// Define fallback functions if needed
+const postItemSlugify = typeof slugify === 'function' ? slugify : (
+  typeof slugifyFn === 'function' ? slugifyFn : function(text) { 
+    return text.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
+  }
+);
+
+const postItemFormatDate = typeof formattedDate === 'function' ? formattedDate : (
+  typeof formattedDateFn === 'function' ? formattedDateFn : function(date) {
+    if (!date) return '';
+    const d = new Date(date);
+    const monthsList = typeof months !== 'undefined' ? months : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthAbbr = monthsList[d.getMonth()].slice(0, 3) + '.';
+    const day = d.getDate();
+    const year = d.getFullYear();
+    return `${monthAbbr} ${day}, ${year}`;
+  }
+);
+
+const postItemIsoDate = typeof isoDate === 'function' ? isoDate : (
+  typeof isoDateFn === 'function' ? isoDateFn : function(date) {
+    if (!date) return '';
+    return new Date(date).toISOString();
+  }
+);
+
+// Determine if this is a full or compact display
+const isCompact = typeof compact !== 'undefined' ? compact : false;
+const heading = headingLevel || 3;
+
+// Build column-scoped archive paths if the post lives under /columns/
+function postItemArchivePath(post, year, month, day) {
+  const colMatch = post.path && post.path.match(/^\/columns\/([^/]+)\//);
+  const base = colMatch ? `/columns/${colMatch[1]}` : '';
+  const y = year.toString();
+  const m = month !== undefined ? month.toString().padStart(2, '0') : null;
+  const d = day !== undefined ? day.toString().padStart(2, '0') : null;
+  if (d && m) return `${base}/${y}/${m}/${d}/`;
+  if (m) return `${base}/${y}/${m}/`;
+  return `${base}/${y}/`;
+}
+
+// Check if this is a static page (to hide dates and tags)
+const isStaticPage = post.meta && post.meta.template === 'static';
+const postDate = post.meta.saved_date || post.lastModified;
+const dateObj = new Date(postDate);
+const year = dateObj.getFullYear();
+const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+const day = dateObj.getDate().toString().padStart(2, '0');
+const monthName = (typeof months !== 'undefined' ? months : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])[dateObj.getMonth()];
+%>
+
+<article class="post-item <%= isCompact ? 'post-item-compact' : '' %>" id="post-<%= postItemSlugify(post.meta.title || post.path) %>">
+  <h<%= heading %>>
+    <a href="<%= post.path %>.html" rel="bookmark"><%= post.meta.title %></a>
+    <% if (post.isDraft) { %><span class="draft-badge">DRAFT</span><% } %>
+    <% if (!post.isPublished) { %><span class="unpublished-badge">UNPUBLISHED</span><% } %>
+  </h<%= heading %>>
+  
+  <%# Date is shown in footer.meta — no need to repeat it here %>
+  
+  <% if (!isCompact && post.meta.description) { %>
+    <p class="post-description"><%= post.meta.description %></p>
+  <% } %>
+  
+  <% if (!isCompact && !isStaticPage && post.meta.updated_date && new Date(post.meta.updated_date).getTime() !== new Date(post.meta.saved_date).getTime()) { %>
+    <p class="updated-notice">
+      <%
+      const updatedObj = new Date(post.meta.updated_date);
+      const updatedYear = updatedObj.getFullYear();
+      const updatedMonth = (updatedObj.getMonth() + 1).toString().padStart(2, '0');
+      const updatedDay = updatedObj.getDate().toString().padStart(2, '0');
+      const updatedMonthName = (typeof months !== 'undefined' ? months : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])[updatedObj.getMonth()];
+      %>
+      Updated: 
+      <time datetime="<%= postItemIsoDate(post.meta.updated_date) %>">
+        <a href="<%= postItemArchivePath(post, updatedYear) %>" class="date-year-link"><%= updatedYear %></a>-<a href="<%= postItemArchivePath(post, updatedYear, updatedMonth) %>" class="date-month-link"><%= updatedMonthName %></a>-<a href="<%= postItemArchivePath(post, updatedYear, updatedMonth, updatedDay) %>" class="date-day-link"><%= updatedDay %></a>
+      </time>
+      <% if (post.meta.updateNote) { %>
+        <span class="update-note"><%= post.meta.updateNote %></span>
+      <% } %>
+    </p>
+  <% } %>
+  
+  <% if (!isCompact && !isStaticPage) { %>
+    <footer class="meta">
+      <dl>
+        <% if (post.tags && post.tags.length) { %>
+          <dt><a href="/topics/" class="meta-label"><%= post.tags.length === 1 ? 'Topic' : 'Topics' %></a></dt>
+          <dd class="meta-topics">
+            <% post.tags.forEach((tag, index) => { %>
+              <a href="/topics/<%= postItemSlugify(tag) %>.html" rel="tag" title="View articles about <%= tag %>" class="topic <%= postItemSlugify(tag) %>"><%= tag %></a><% if (index !== post.tags.length - 1) { %><span class="tag-sep">, </span><% } %>
+            <% }); %>
+          </dd>
+        <% } %>
+        <% if (postDate) { %>
+          <dt class="date-label">Date</dt>
+          <dd>
+            <time datetime="<%= postItemIsoDate(postDate) %>">
+              <a href="<%= postItemArchivePath(post, year, month) %>" class="month"><%= monthName %></a>
+              <a href="<%= postItemArchivePath(post, year, month, day) %>" class="day"><%= day %></a>,
+              <a href="<%= postItemArchivePath(post, year) %>" class="year"><%= year %></a>
+            </time>
+          </dd>
+        <% } %>
+      </dl>
+    </footer>
+  <% } %>
+</article>

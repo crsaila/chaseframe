@@ -1,0 +1,42 @@
+<!-- templates/archives.ejs - Template for column archive index pages -->
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+<%
+const columnName = page.meta.columnName || '';
+const columnPath = columnName ? `/columns/${columnName}` : '/archives';
+%>
+
+<section class="archives-page">
+  <%- include('./partials/page-header', {
+    title: `<a href="${columnPath}/">${(site.columns[columnName] && site.columns[columnName].title) || columnName || 'Archive'}</a> Archive`,
+    description: page.meta.description || 'All posts by year'
+  }) %>
+
+  <div class="archives-container">
+    <% if (!page.meta.years || page.meta.years.length === 0) { %>
+      <%- include('./partials/empty-state', { 
+        message: 'No archived content found.'
+      }) %>
+    <% } else { %>
+      <% page.meta.years.forEach(year => { %>
+        <div class="year-group">
+          <h2 class="year-heading">
+            <a href="<%= year.url || `${columnPath}/${year.year}/` %>" class="<%= year.isCms ? '' : 'year-link--archive' %>"><time datetime="<%= year.year %>"><%= year.year %></time></a>
+          </h2>
+          <% if (year.monthGrid && year.monthGrid.length > 0) { %>
+            <div class="month-grid">
+              <% year.monthGrid.forEach(month => { %>
+                <% if (month.hasContent && month.url) { %>
+                  <a href="<%= month.url %>" class="month-cell month-cell--active<%= month.isCms ? ' month-cell--cms' : ' month-cell--archive' %>"><time datetime="<%= year.year %>-<%= String(month.num).padStart(2,'0') %>"><%= month.name %></time></a>
+                <% } else { %>
+                  <span class="month-cell month-cell--empty"><time datetime="<%= year.year %>-<%= String(month.num).padStart(2,'0') %>"><%= month.name %></time></span>
+                <% } %>
+              <% }); %>
+            </div>
+          <% } %>
+        </div>
+      <% }); %>
+    <% } %>
+  </div>
+</section>

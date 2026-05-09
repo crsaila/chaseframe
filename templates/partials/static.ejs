@@ -1,0 +1,38 @@
+<!-- templates/static.ejs - Template for static pages -->
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+<article class="static-page">
+  <header class="static-page-header">
+    <h1><%= page.meta.title %></h1>
+    
+    <% if (page.meta.description) { %>
+      <p class="description"><%= page.meta.description %></p>
+    <% } %>
+  </header>
+  
+  <!-- Article content with first paragraph styling -->
+  <% 
+    // Split content to apply first paragraph class
+    let content = page.content;
+    if (content.indexOf('<p>') === 0) {
+      content = content.replace('<p>', '<p class="first">');
+    }
+  %>
+  <div class="static-page-content">
+    <%- content %>
+  </div>
+  
+  <% if (page.meta.showBacklinks !== false && backlinks && backlinks.length > 0) { %>
+    <div class="backlinks-section">
+      <h2>Referenced by</h2>
+      <ul class="backlinks-list">
+        <% backlinks.forEach(linkingPage => { %>
+          <li>
+            <a href="<%= linkingPage.path %>.html"><%= linkingPage.title || linkingPage.path %></a>
+          </li>
+        <% }); %>
+      </ul>
+    </div>
+  <% } %>
+</article>

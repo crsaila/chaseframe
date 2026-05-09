@@ -1,0 +1,25 @@
+<%
+/**
+ * Page Header Partial
+ * Displays a consistent page title and optional description
+ * 
+ * Parameters:
+ * - title: The page title (required)
+ * - description: Optional page description
+ * - headerClass: Optional CSS class for the header
+ */
+
+// Set default values for parameters that might be missing
+const headerTitle = typeof title !== 'undefined' ? title : '';
+const headerDescription = typeof description !== 'undefined' ? description : '';
+const headerClassName = typeof headerClass !== 'undefined' ? headerClass : '';
+%>
+<header class="page-header <%= headerClassName %>">
+  <% if (headerTitle) { %>
+    <h1><%- headerTitle %></h1>
+  <% } %>
+  
+  <% if (headerDescription) { %>
+    <p class="description"><%- headerDescription %></p>
+  <% } %>
+</header>

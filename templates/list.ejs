@@ -1,0 +1,93 @@
+<!-- templates/list.ejs - Template for article lists -->
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+<% 
+// Get articles to display
+let articles = [];
+
+// hasCategory handles both array and string category values from YAML
+function hasCategory(cat, value) {
+  if (!cat) return false;
+  return Array.isArray(cat) ? cat.includes(value) : cat === value;
+}
+
+// If we have explicit list items in the front matter
+if (page.meta.list_items && page.meta.list_items.length) {
+  articles = page.meta.list_items;
+} 
+// Otherwise, get articles from all pages
+else {
+  articles = allPages
+    .filter(p => p.meta.template === 'article' || hasCategory(p.meta.category, 'article'))
+    .filter(p => p.isPublished && !p.isDraft)
+    .sort((a, b) => {
+      const dateA = a.meta.saved_date ? new Date(a.meta.saved_date) : a.lastModified;
+      const dateB = b.meta.saved_date ? new Date(b.meta.saved_date) : b.lastModified;
+      const diff = dateB - dateA;
+      if (diff !== 0) return diff;
+      // Same saved_date — use file creation time as tiebreaker (newest first)
+      if (a.createdAt && b.createdAt) return b.createdAt - a.createdAt;
+      return 0;
+    })
+    .slice(0, page.meta.limit || 10);
+}
+%>
+
+<section class="list-page">
+  <%- include('./partials/page-header', { 
+    title: page.meta.title,
+    description: page.meta.description
+  }) %>
+
+  <%- page.content %>
+
+  <section class="article-list">
+    <% if (articles.length === 0) { %>
+      <%- include('./partials/empty-state', { message: 'No articles found.' }) %>
+    <% } else { %>
+      <% articles.forEach(function(article) { 
+        // For articles from list_items
+        if (article.title) {
+          const articleId = article.id || `entry${new Date(article.date || new Date()).getFullYear()}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
+          const permalink = article.url || '#';
+          
+          // Create a post-like object to use with post-item partial
+          const postObject = {
+            path: permalink.replace(/\.html$/, ''),
+            meta: {
+              title: article.title,
+              saved_date: article.date,
+              description: article.description
+            },
+            tags: article.tags,
+            isDraft: false,
+            isPublished: true
+          };
+      %>
+        <%- include('./partials/post-item', { 
+          post: postObject, 
+          headingLevel: 3
+        }) %>
+      <% 
+        } 
+        // For articles from allPages
+        else {
+      %>
+        <%- include('./partials/post-item', { 
+          post: article, 
+          headingLevel: 3
+        }) %>
+      <% 
+        }
+      }); 
+      %>
+    <% } %>
+  </section>
+
+  <% if (page.meta.showMore && articles.length >= (page.meta.limit || 10)) { %>
+    <p class="more-link">
+      <a href="<%= page.meta.moreUrl || '/archive/' %>">More articles &rarr;</a>
+    </p>
+  <% } %>
+</section>

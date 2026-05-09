@@ -1,0 +1,55 @@
+<%
+const metadataIsoDate = typeof isoDate === 'function' ? isoDate : function(date) {
+  if (!date) return '';
+  return new Date(date).toISOString();
+};
+
+const isStaticPage = page.meta && page.meta.template === 'static';
+
+
+function formatDate(dateVal) {
+  const d = new Date(dateVal);
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const day = d.getDate();
+  return { year, month, day, monthName: monthsList[month] };
+}
+%>
+
+<footer class="meta">
+  <dl>
+    <% if (page.tags && page.tags.length && page.meta.template !== 'static') { %>
+      <dt><a href="/topics/" class="meta-label"><%= page.tags.length === 1 ? 'Topic' : 'Topics' %></a></dt>
+      <dd class="meta-topics">
+        <% page.tags.forEach((tag, index) => { %>
+          <a href="/topics/<%= slugifyFn(tag) %>.html" rel="tag" title="View articles about <%= tag %>" class="topic <%= slugifyFn(tag) %>"><%= tag %></a><% if (index !== page.tags.length - 1) { %><span class="tag-sep">, </span><% } %>
+        <% }); %>
+      </dd>
+    <% } %>
+    
+    <%# Date is shown in article header — only show here on non-article pages %>
+    <% if (!isStaticPage && page.meta.template !== 'article' && (page.meta.saved_date || page.lastModified)) { 
+      const sd = formatDate(page.meta.saved_date || page.lastModified);
+    %>
+      <dt>Date</dt>
+      <dd>
+        <time datetime="<%= metadataIsoDate(page.meta.saved_date || page.lastModified) %>">
+          <a href="<%= archivePathFn(page,sd.year, sd.month + 1) %>" class="date-month-link" rel="directory" title="All posts from <%= sd.monthName %> <%= sd.year %>"><%= sd.monthName %></a>
+          <a href="<%= archivePathFn(page,sd.year, sd.month + 1, sd.day) %>" class="date-day-link" rel="directory" title="All posts from <%= sd.monthName %> <%= sd.day %>, <%= sd.year %>"><%= sd.day %></a>,
+          <a href="<%= archivePathFn(page,sd.year) %>" class="date-year-link" rel="directory" title="All posts from <%= sd.year %>"><%= sd.year %></a>
+        </time>
+      </dd>
+    <% } %>
+    
+    <% if (config && config.showBacklinks && backlinks && backlinks.length > 0) { %>
+      <dt>Referenced by</dt>
+      <dd>
+        <ul class="backlinks-list">
+          <% backlinks.forEach(linkingPage => { %>
+            <li><a href="<%= linkingPage.path %>.html"><%= linkingPage.title || linkingPage.path %></a></li>
+          <% }); %>
+        </ul>
+      </dd>
+    <% } %>
+  </dl>
+</footer>

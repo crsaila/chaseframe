@@ -1,0 +1,129 @@
+<!-- templates/homepage.ejs - Template for the homepage -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "<%= site.siteName %>",
+  "url": "<%= site.siteUrl %>",
+  "description": "<%= site.siteDescription %>",
+  "author": {
+    "@type": "Person",
+    "name": "<%= site.authorName %>",
+    "url": "<%= site.siteUrl %>"
+  }
+}
+</script>
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+<%
+// Get recent articles - use a helper if available or the code already there
+// hasCategory handles both array and string category values from YAML
+function hasCategory(cat, value) {
+  if (!cat) return false;
+  return Array.isArray(cat) ? cat.includes(value) : cat === value;
+}
+
+const recentArticles = allPages
+  .filter(p => p.meta.template === 'article' || hasCategory(p.meta.category, 'article'))
+  .filter(p => p.isPublished && !p.isDraft)
+  .sort((a, b) => {
+    const dateA = a.meta.saved_date ? new Date(a.meta.saved_date) : a.lastModified;
+    const dateB = b.meta.saved_date ? new Date(b.meta.saved_date) : b.lastModified;
+    const diff = dateB - dateA;
+    if (diff !== 0) return diff;
+    // Same saved_date — use file creation time as tiebreaker (newest first)
+    if (a.createdAt && b.createdAt) return b.createdAt - a.createdAt;
+    return 0;
+  })
+  .slice(0, page.meta.limit || 5);
+%>
+
+<div class="homepage-layout">
+  <section class="homepage-content">
+    <% if (page.meta.welcomeTitle) { %>
+      <h2><%= page.meta.welcomeTitle %></h2>
+
+      <% if (page.meta.welcomeText) { %>
+        <p class="first"><%= page.meta.welcomeText %></p>
+      <% } %>
+    <% } %>
+
+    <%- page.content %>
+  </section>
+
+  <% if (recentArticles.length > 0) { %>
+    <aside class="recent-articles sidebar-section">
+      <h2>Recently</h2>
+
+      <%
+        const now = new Date();
+        const minStep = 0.1;
+
+        const recentItems = recentArticles.map(function(article) {
+          const postDate = article.meta.saved_date ? new Date(article.meta.saved_date) : article.lastModified;
+          const ageDays = Math.floor((now - postDate) / (1000 * 60 * 60 * 24));
+          let opacity;
+          if      (ageDays <= 7)  { opacity = 1.0;  }
+          else if (ageDays <= 21) { opacity = 0.85; }
+          else if (ageDays <= 35) { opacity = 0.7;  }
+          else if (ageDays <= 49) { opacity = 0.6;  }
+          else                    { opacity = 0.5;  }
+          const weight = ageDays <= 3 ? 500 : 400;
+          return { article, opacity, weight };
+        });
+
+        // Enforce minimum step between each item, floor at 0.5
+        for (let i = 1; i < recentItems.length; i++) {
+          const maxAllowed = Math.max(recentItems[i - 1].opacity - minStep, 0.5);
+          if (recentItems[i].opacity > maxAllowed) {
+            recentItems[i].opacity = maxAllowed;
+          }
+        }
+      %>
+      <ul>
+      <% recentItems.forEach(function(item) { %>
+        <li style="opacity: <%= item.opacity %>;">
+          <%
+            const _rd = item.article.meta.saved_date ? new Date(item.article.meta.saved_date) : item.article.lastModified;
+            const _rYear = _rd.getFullYear();
+            const _rTitle = `Posted on ${months[_rd.getMonth()]} ${_rd.getDate()}${_rYear !== (site.buildYear || new Date().getFullYear()) ? ', ' + _rYear : ''}`;
+          %>
+          <a href="<%= item.article.path %>.html" style="font-weight: <%= item.weight %>;" title="<%= _rTitle %>"><%= item.article.meta.title %></a>
+        </li>
+      <% }); %>
+      </ul>
+    </aside>
+  <% } %>
+</div>
+
+<% if (page.meta.showArchiveLink) { %>
+  <p class="archive-link">
+    <a href="<%= page.meta.archiveUrl || '/archives/' %>">View more posts in the archive &rarr;</a>
+  </p>
+<% } %>
+
+<% 
+// Get "On This Day" posts if available and configured
+const onThisDayPosts = locals.onThisDayPosts || (typeof getOnThisDayPosts === 'function' ? getOnThisDayPosts(allPages) : []);
+%>
+
+<% if ((config && config.showOnThisDay) && onThisDayPosts && onThisDayPosts.length > 0) { %>
+  <aside class="on-this-day">
+    <h2>On This Day</h2>
+    
+    <% onThisDayPosts.forEach(function(post) {
+      const postDate = new Date(post.meta.saved_date);
+      const yearsAgo = new Date().getFullYear() - postDate.getFullYear();
+    %>
+      <article class="on-this-day-item">
+        <h3><a href="<%= post.path %>"><%= post.meta.title %></a></h3>
+        <p><%= yearsAgo %> <%= yearsAgo === 1 ? 'year' : 'years' %> ago</p>
+        <%- include('./partials/date-display', { 
+          date: post.meta.saved_date,
+          classes: 'on-this-day-date'
+        }) %>
+      </article>
+    <% }); %>
+  </aside>
+<% } %>

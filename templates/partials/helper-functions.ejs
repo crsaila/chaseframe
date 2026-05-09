@@ -1,0 +1,76 @@
+<%
+/**
+ * Helper Functions Partial
+ * Defines common helper functions for use across templates
+ * This centralizes the fallback functions instead of redefining them in each template
+ */
+
+// Slugify function for creating URL-friendly strings
+slugifyFn = typeof slugify === 'function' ? slugify : function(text) { 
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, '-')           // Replace spaces with -
+    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+    .replace(/^-+/, '')             // Trim - from start of text
+    .replace(/-+$/, '');            // Trim - from end of text
+};
+
+// Month names
+monthsList = typeof months !== 'undefined' ? months : [
+  'January', 'February', 'March', 'April', 'May', 'June', 
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+// Parse a date value safely — normaliseDate already stores dates as local midnight
+parseDateLocal = function(date) {
+  if (!date) return new Date();
+  if (date instanceof Date) return date;
+  return new Date(date);
+};
+
+// Format a date to a readable string
+formattedDateFn = typeof formattedDate === 'function' ? formattedDate : function(date) {
+  if (!date) return '';
+  const d = parseDateLocal(date);
+  const monthAbbr = monthsList[d.getMonth()].slice(0, 3) + '.';
+  return `${monthAbbr} ${d.getDate()}, ${d.getFullYear()}`;
+};
+
+// Format a date to ISO format for HTML time elements
+isoDateFn = typeof isoDate === 'function' ? isoDate : function(date) {
+  if (!date) return '';
+  return new Date(date).toISOString();
+};
+
+// Generate a unique ID for an article
+generateArticleIdFn = typeof generateArticleId === 'function' ? generateArticleId : function(page) {
+  return page.meta.id || `entry${new Date(page.meta.saved_date || page.lastModified).getFullYear()}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
+};
+
+// Build a column-scoped archive path from a page/post path (or path string)
+archivePathFn = function(pageOrPath, year, month, day) {
+  const p = typeof pageOrPath === 'string' ? pageOrPath : pageOrPath.path;
+  const colMatch = p.match(/^\/columns\/([^/]+)\//);
+  const base = colMatch ? `/columns/${colMatch[1]}` : '';
+  const y = year.toString();
+  if (!month) return `${base}/${y}/`;
+  const m = month.toString().padStart(2, '0');
+  if (!day)  return `${base}/${y}/${m}/`;
+  const d = day.toString().padStart(2, '0');
+  return `${base}/${y}/${m}/${d}/`;
+};
+
+// Get the month name from a month number (1-12)
+getMonthNameFn = function(monthNum) {
+  return monthsList[parseInt(monthNum) - 1] || '';
+};
+
+// Proportional vertical spacing for list pages — shorter lists get more breathing room
+// Returns a rem value: 4rem at 1 item, 1.6rem at 10+ items
+listSpacingFn = function(count) {
+  return (count >= 10 ? 1.6 : (4 - (count - 1) * (2.4 / 9))).toFixed(2);
+};
+
+%>

@@ -1,0 +1,5 @@
+<% if (tags && tags.length) { %>
+  <% tags.forEach((tag, index) => { %>
+    <a href="/topics/<%= slugifyFn(tag) %>.html" rel="directory" title="View articles about <%= tag %>" class="topic <%= slugifyFn(tag) %>"><%= tag %></a><% if (index !== tags.length - 1) { %><span class="tag-sep">, </span><% } %>
+  <% }); %>
+<% } %>

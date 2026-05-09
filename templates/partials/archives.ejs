@@ -1,0 +1,46 @@
+<!-- templates/archives.ejs - Template for archive pages -->
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+<section class="archives-page">
+  <%- include('./partials/page-header', { 
+    title: page.meta.title || 'Archives',
+    description: page.meta.description || 'Archive of all posts by year and month'
+  }) %>
+  
+  <div class="sort-toggle">
+    <a href="/archives/?sort=<%= page.meta.sortOrder === 'asc' ? 'desc' : 'asc' %>" class="sort-link">
+      Sort by <%= page.meta.sortOrder === 'asc' ? 'newest' : 'oldest' %> first
+    </a>
+  </div>
+  
+  <div class="archives-container">
+    <% if (!page.meta.years || page.meta.years.length === 0) { %>
+      <%- include('./partials/empty-state', { 
+        message: 'No archived content found.'
+      }) %>
+    <% } else { %>
+      <% page.meta.years.forEach(year => { %>
+        <div class="year-group">
+          <h2 class="year-heading">
+            <a href="/<%= year.year %>/?sort=<%= page.meta.sortOrder %>"><%= year.year %></a>
+            <span class="post-count">(<%= year.posts.length %> posts)</span>
+          </h2>
+          
+          <div class="month-list">
+            <% if (year.months && year.months.length > 0) { %>
+              <% year.months.forEach(month => { %>
+                <div class="month-item">
+                  <a href="/<%= year.year %>/<%= month.month.padStart(2, '0') %>/?sort=<%= page.meta.sortOrder %>" class="month-link">
+                    <%= getMonthNameFn(month.month) %>
+                    <span class="post-count">(<%= month.posts.length %>)</span>
+                  </a>
+                </div>
+              <% }); %>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+    <% } %>
+  </div>
+</section>

@@ -1,0 +1,17 @@
+<%
+/**
+ * Empty State Partial
+ * Consistently displays "no content" messages
+ * 
+ * Parameters:
+ * - message: The message to display (optional, default: 'No content found')
+ * - classes: Optional CSS classes
+ */
+
+// Set default values for parameters that might be missing
+const emptyMessage = typeof message !== 'undefined' ? message : 'No content found.';
+const emptyClasses = typeof classes !== 'undefined' ? classes : '';
+%>
+<div class="empty-state <%= emptyClasses %>">
+  <p><%= emptyMessage %></p>
+</div>

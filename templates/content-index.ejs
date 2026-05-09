@@ -1,0 +1,26 @@
+<!-- templates/content-index.ejs - Template for content index pages -->
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+<section class="content-index-page">
+  <%- include('./partials/page-header', { 
+    title: page.meta.title || 'All Content',
+    description: page.meta.description
+  }) %>
+  
+  <div class="introduction">
+    <%- page.content %>
+  </div>
+  
+  <div class="content-index">
+    <% if (!page.meta.contentItems || page.meta.contentItems.length === 0) { %>
+      <%- include('./partials/empty-state', { message: 'No content found.' }) %>
+    <% } else { %>
+      <div class="content-list">
+        <% page.meta.contentItems.forEach(item => { %>
+          <%- include('./partials/post-item', { post: item, headingLevel: 2, compact: false, slugify: slugifyFn, formattedDate: formattedDateFn, isoDate: isoDateFn, months: monthsList }) %>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>

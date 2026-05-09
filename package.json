@@ -1,0 +1,27 @@
+{
+  "name": "chaseframe",
+  "version": "1.0.0",
+  "description": "A simple markdown-based content management system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node lib/build.js",
+    "dev": "PREVIEW_MODE=true node server.js"
+  },
+  "keywords": [
+    "markdown",
+    "cms",
+    "static-site"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "front-matter": "^4.0.2",
+    "marked": "^17.0.4",
+    "marked-footnote": "^1.4.0"
+  }
+}

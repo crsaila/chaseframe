@@ -1,0 +1,36 @@
+<%
+// Define all common helper functions in the global scope
+slugify = function(text) {
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+};
+
+months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+formattedDate = function(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  
+  const monthAbbr = months[d.getMonth()].slice(0, 3) + '.';
+  const day = d.getDate();
+  const year = d.getFullYear();
+  
+  return `${monthAbbr} ${day}, ${year}`;
+};
+
+isoDate = function(date) {
+  if (!date) return '';
+  return new Date(date).toISOString();
+};
+
+// Generate an ID for the article if not provided
+generateArticleId = function(page) {
+  return page.meta.id || `entry${new Date(page.meta.saved_date || page.lastModified).getFullYear()}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
+};
+%>

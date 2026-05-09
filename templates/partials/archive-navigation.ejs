@@ -1,0 +1,22 @@
+<%
+const prevLinkObj = typeof prevLink !== 'undefined' ? prevLink : null;
+const upLinkObj   = typeof upLink   !== 'undefined' ? upLink   : null;
+const nextLinkObj = typeof nextLink !== 'undefined' ? nextLink : null;
+%>
+<nav class="post-nav archive-navigation" aria-label="Archive navigation">
+  <% if (prevLinkObj && prevLinkObj.url) { %>
+    <a href="<%= prevLinkObj.url %>" class="post-nav-prev" rel="prev"><%= prevLinkObj.text %></a>
+  <% } else { %>
+    <span class="post-nav-prev"></span>
+  <% } %>
+  <span class="post-nav-home">
+    <% if (upLinkObj && upLinkObj.url) { %>
+      <a href="<%= upLinkObj.url %>" rel="index"><%= upLinkObj.text %></a>
+    <% } %>
+  </span>
+  <% if (nextLinkObj && nextLinkObj.url) { %>
+    <a href="<%= nextLinkObj.url %>" class="post-nav-next" rel="next"><%= nextLinkObj.text %></a>
+  <% } else { %>
+    <span class="post-nav-next"></span>
+  <% } %>
+</nav>

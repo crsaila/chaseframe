@@ -1,0 +1,134 @@
+<!-- templates/article.ejs - Template for blog posts/articles -->
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+
+<article id="<%= generateArticleIdFn(page) %>" class="article-page">
+  <header class="article-header">
+    <h1><%= page.meta.title %></h1>
+    
+    <% if (page.meta.saved_date) { %>
+      <% 
+      const dateObj = parseDateLocal(page.meta.saved_date);
+      const year = dateObj.getFullYear();
+      const month = dateObj.getMonth() + 1;
+      const day = dateObj.getDate();
+      const monthName = monthsList[dateObj.getMonth()];
+      %>
+      <p class="article-date">
+        <time datetime="<%= isoDateFn(page.meta.saved_date) %>">
+          <a href="<%= archivePathFn(page.path,year, month) %>" class="date-month-link" title="All posts from <%= monthName %> <%= year %>"><%= monthName %></a>
+          <a href="<%= archivePathFn(page.path,year, month, day) %>" class="date-day-link" title="All posts from <%= monthName %> <%= day %>, <%= year %>"><%= day %></a>,
+          <a href="<%= archivePathFn(page.path,year) %>" class="date-year-link" title="All posts from <%= year %>"><%= year %></a>
+        </time>
+        <% if (page.meta.updated_date && page.meta.updated_date !== page.meta.saved_date) { %>
+          <%
+          const updObj = parseDateLocal(page.meta.updated_date);
+          const updYear = updObj.getFullYear();
+          const updMonth = updObj.getMonth() + 1;
+          const updDay = updObj.getDate();
+          const updMonthName = monthsList[updObj.getMonth()];
+          %>
+          <span class="article-updated">Updated
+            <time datetime="<%= isoDateFn(page.meta.updated_date) %>">
+              <a href="<%= archivePathFn(page.path, updYear, updMonth) %>" class="date-month-link" title="All posts from <%= updMonthName %> <%= updYear %>"><%= updMonthName %></a>
+              <a href="<%= archivePathFn(page.path, updYear, updMonth, updDay) %>" class="date-day-link" title="All posts from <%= updMonthName %> <%= updDay %>, <%= updYear %>"><%= updDay %></a>,
+              <a href="<%= archivePathFn(page.path, updYear) %>" class="date-year-link" title="All posts from <%= updYear %>"><%= updYear %></a>
+            </time>
+          </span>
+        <% } %>
+      </p>
+    <% } %>
+  </header>
+
+  <div class="article-content">
+    <% 
+      let content = page.content;
+      if (content.indexOf('<p>') === 0) {
+        content = content.replace('<p>', '<p class="first">');
+      }
+    %>
+    <%- content %>
+  </div>
+
+  <%- include('./partials/metadata', { 
+    page: page, 
+    config: config, 
+    backlinks: backlinks, 
+    slugify: slugifyFn, 
+    months: monthsList, 
+    formattedDate: formattedDateFn, 
+    isoDate: isoDateFn 
+  }) %>
+
+  <% if (page.socialStats) {
+    const ss = page.socialStats;
+    const parts = [];
+    if (ss.replies > 0) parts.push(`<b>${ss.replies}</b> ${ss.replies === 1 ? 'reply' : 'replies'}`);
+    if (ss.likes > 0) parts.push(`<b>${ss.likes}</b> ${ss.likes === 1 ? 'like' : 'likes'}`);
+    if (ss.boosts > 0) parts.push(`<b>${ss.boosts}</b> ${ss.boosts === 1 ? 'boost' : 'boosts'}`);
+    if (parts.length > 0) {
+      const _approxPre  = ['roughly', 'about', 'close to'];
+      const _approxMid  = [', last check,', ', give or take,'];
+      const _allApprox  = [..._approxPre, ..._approxMid];
+      const _subjects   = ['this post', 'this one', 'this', 'this item', 'the piece'];
+      const _seed       = page.path.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+      const _approx     = _allApprox[(_seed >> 2) % _allApprox.length];
+      const _subject    = _subjects[_seed % _subjects.length];
+      const _isMid      = _approxMid.includes(_approx);
+      const _countStr   = parts.length === 1 ? parts[0]
+        : parts.length === 2 ? `${parts[0]} and ${parts[1]}`
+        : `${parts[0]}, ${parts[1]}, and ${parts[2]}`;
+      const netLinks = ss.networks.map(n =>
+        `<a href="${n.url}">${n.name.charAt(0).toUpperCase() + n.name.slice(1)}</a>`
+      );
+      const prefix = ss.networks.length === 1
+        ? `On ${netLinks[0]}`
+        : `Across ${netLinks.join(' and ')}`;
+  %>
+  <p class="social-stats"><%- prefix %>, <%- _subject %> has<%- _isMid ? '' : ' ' %><%- _approx %> <%- _countStr %>.</p>
+  <% } } %>
+
+  <%
+  // Prev/next navigation — scoped to same column (or root blog)
+  const colMatch = page.path.match(/^\/columns\/([^/]+)\//)
+  const colPrefix = colMatch ? `/columns/${colMatch[1]}/` : null;
+
+  function isArticle(p) {
+    return p.meta && p.meta.template === 'article';
+  }
+
+  // Insert current page back to get accurate index
+  const allSiblings = (allPages || [])
+    .filter(p => {
+      if (!p.meta || !p.meta.saved_date) return false;
+      if (!isArticle(p)) return false;
+      if (colPrefix) return p.path.startsWith(colPrefix);
+      return !p.path.match(/^\/columns\//);
+    })
+    .sort((a, b) => new Date(a.meta.saved_date) - new Date(b.meta.saved_date));
+
+  const idx = allSiblings.findIndex(p => p.path === page.path);
+  const prevPost = idx > 0 ? allSiblings[idx - 1] : null;
+  const nextPost = idx < allSiblings.length - 1 ? allSiblings[idx + 1] : null;
+
+  const homeUrl = colPrefix ? `/columns/${colMatch[1]}/` : '/';
+  %>
+
+  <% if (prevPost || nextPost) { %>
+  <nav class="post-nav">
+    <% if (prevPost) { %>
+      <a href="<%= prevPost.path %>.html" class="post-nav-prev" rel="prev" title="Previous entry"><%= prevPost.meta.title %></a>
+    <% } else { %>
+      <span class="post-nav-prev"></span>
+    <% } %>
+    <% const _cat = page.meta && page.meta.category; const _isColumnArticle = (Array.isArray(_cat) ? _cat.includes('article') : _cat === 'article') && page.meta.template === 'article'; %>
+    <span class="post-nav-home"><% if (_isColumnArticle) { %><a href="<%= homeUrl %>archives/">Full Archive</a> (<a href="<%= homeUrl %>rss.xml"><abbr title="Really Simple Syndication" aria-label="Really Simple Syndication">RSS</abbr></a>)<% } %></span>
+    <% if (nextPost) { %>
+      <a href="<%= nextPost.path %>.html" class="post-nav-next" rel="next" title="Next entry"><%= nextPost.meta.title %></a>
+    <% } else { %>
+      <span class="post-nav-next"></span>
+    <% } %>
+  </nav>
+  <% } %>
+</article>

@@ -1,0 +1,63 @@
+<!-- templates/day-archives.ejs - Template for daily archive pages -->
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+<section class="day-archive-page">
+  <%
+    const dayArchiveBase = page.meta.columnName ? `/columns/${page.meta.columnName}` : '';
+    const monthUrl = `${dayArchiveBase}/${page.meta.year}/${page.meta.month.toString().padStart(2, '0')}/`;
+    const yearUrl  = `${dayArchiveBase}/${page.meta.year}/`;
+    const _pad = n => String(n).padStart(2,'0');
+    const _isoDay = `${page.meta.year}-${_pad(page.meta.month)}-${_pad(parseInt(page.meta.day))}`;
+    const dayDesc  = `Collected posts from <strong><a href="${monthUrl}"><time datetime="${page.meta.year}-${_pad(page.meta.month)}">${page.meta.monthName}</time></a> <time datetime="${_isoDay}">${parseInt(page.meta.day)}</time>, <a href="${yearUrl}"><time datetime="${page.meta.year}">${page.meta.year}</time></a></strong>`;
+  %>
+  <%- include('./partials/page-header', {
+    title: `<a href="${dayArchiveBase}/">${(site.columns[page.meta.columnName] && site.columns[page.meta.columnName].title) || page.meta.columnName || 'Archive'}</a> Archive`,
+    description: dayDesc
+  }) %>
+
+  <%
+    const _dayCount = page.meta.posts ? page.meta.posts.length : 0;
+    const _daySpacing = listSpacingFn(_dayCount);
+  %>
+  <section class="day-archive" style="margin-top: <%= _daySpacing %>rem; margin-bottom: <%= _daySpacing %>rem;">
+    <% if (!page.meta.posts || page.meta.posts.length === 0) { %>
+      <%- include('./partials/empty-state', { message: 'No content found for this day.' }) %>
+    <% } else { %>
+      <div class="post-list">
+        <% page.meta.posts.forEach(post => { %>
+          <div class="post-item">
+            <a href="<%= post.path %>.html" rel="bookmark"><%= post.meta.title %></a>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </section>
+  <%- include('./partials/archive-navigation', {
+    prevLink: page.meta.prevDay ? {
+      url: `${dayArchiveBase}/${page.meta.prevDay.year}/${page.meta.prevDay.month}/${page.meta.prevDay.day}/`,
+      text: page.meta.prevDay.formatted
+    } : null,
+    upLink: {
+      url: `${dayArchiveBase}/${page.meta.year}/${page.meta.month}/`,
+      text: `${page.meta.monthName} ${page.meta.year}`
+    },
+    nextLink: page.meta.nextDay ? {
+      url: `${dayArchiveBase}/${page.meta.nextDay.year}/${page.meta.nextDay.month}/${page.meta.nextDay.day}/`,
+      text: page.meta.nextDay.formatted
+    } : null
+  }) %>
+</section>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Home", "item": "<%= site.siteUrl %>"},
+    {"@type": "ListItem", "position": 2, "name": "Archive", "item": "<%= site.siteUrl.replace(/\/$/, '') + dayArchiveBase %>/archives/"},
+    {"@type": "ListItem", "position": 3, "name": "<%= page.meta.year %>", "item": "<%= site.siteUrl.replace(/\/$/, '') + dayArchiveBase %>/<%= page.meta.year %>/"},
+    {"@type": "ListItem", "position": 4, "name": "<%= page.meta.monthName %>", "item": "<%= site.siteUrl.replace(/\/$/, '') + dayArchiveBase %>/<%= page.meta.year %>/<%= _pad(page.meta.month) %>/"},
+    {"@type": "ListItem", "position": 5, "name": "<%= parseInt(page.meta.day) %>", "item": "<%= site.siteUrl.replace(/\/$/, '') + dayArchiveBase %>/<%= page.meta.year %>/<%= _pad(page.meta.month) %>/<%= _pad(parseInt(page.meta.day)) %>/"}
+  ]
+}
+</script>

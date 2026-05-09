@@ -1,0 +1,67 @@
+<!-- templates/topics.ejs - Template for tag/topic pages -->
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+<section class="topics-page">
+  <%
+    const _count = page.meta.taggedPosts ? page.meta.taggedPosts.length : 0;
+    const _listSpacing = listSpacingFn(_count);
+    const _legacy = page.meta.hasLegacyTopic;
+    const _legacyCount = page.meta.legacyTopicCount || 0;
+    const _words = ['no','one','two','three','four','five','six','seven','eight','nine'];
+    const _countRaw = _count < 10 ? _words[_count] : `All ${_count}`;
+    const _countStr = _countRaw.charAt(0).toUpperCase() + _countRaw.slice(1);
+    let _desc = `${_countStr} ${_count === 1 ? 'post' : 'posts'} tagged <mark>${page.meta.currentTag}</mark>`;
+    if (_legacy) {
+      const _archiveCountStr = _legacyCount > 0 ? (_legacyCount < 10 ? `${_words[_legacyCount]} older` : `${_legacyCount} older`) : '';
+      const _archiveText = _archiveCountStr ? `${_archiveCountStr} in the archive` : 'older posts in the archive';
+      const _archiveTitle = _legacyCount === 1 ? `Only one old post tagged \u201c${page.meta.currentTag}\u201d` : _legacyCount > 1 ? `${_legacyCount} older posts tagged \u201c${page.meta.currentTag}\u201d` : `Older posts tagged \u201c${page.meta.currentTag}\u201d`;
+      _desc += `, plus <a href="${page.meta.legacyTopicUrl}" title="${_archiveTitle}">${_archiveText}</a>`;
+    }
+  %>
+  <%- include('./partials/page-header', {
+    title: page.meta.title,
+    description: _desc
+  }) %>
+
+  <section class="topic-posts" style="margin-top: <%= _listSpacing %>rem; margin-bottom: <%= _listSpacing %>rem;">
+    <% if (!page.meta.taggedPosts || page.meta.taggedPosts.length === 0) { %>
+      <%- include('./partials/empty-state', {
+        message: 'No recent posts found with this tag.'
+      }) %>
+    <% } else { %>
+      <div class="post-list">
+        <% page.meta.taggedPosts.forEach(post => { %>
+          <%
+            const _pd = post.meta.saved_date ? new Date(post.meta.saved_date) : post.lastModified;
+            const _pYear = _pd.getFullYear();
+            const _pMonth = (_pd.getMonth() + 1).toString().padStart(2, '0');
+            const _pMonthName = months[_pd.getMonth()];
+            const _pMonthAbbr = _pMonthName.slice(0, 3);
+            const _pCol = post.path.match(/^\/columns\/([^/]+)\//);
+            const _pBase = _pCol ? `/columns/${_pCol[1]}` : '';
+          %>
+          <div class="post-item">
+            <span class="post-date">
+              <% if (_pCol) { %><a href="<%= _pBase %>/<%= _pYear %>/<%= _pMonth %>/" title="All posts from <%= _pMonthName %> <%= _pYear %>"><% } %><time datetime="<%= _pYear %>-<%= _pMonth %>"><%= _pMonthAbbr %> <%= _pYear %></time><% if (_pCol) { %></a><% } %>
+            </span>
+            <a href="<%= post.path %>.html" rel="bookmark"><%= post.meta.title %></a>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </section>
+
+  <% if (page.meta.relatedTags && page.meta.relatedTags.length > 0) { %>
+    <footer class="meta topic-related">
+      <dl>
+        <dt>Related</dt>
+        <dd class="meta-topics">
+          <% page.meta.relatedTags.forEach((tag, i) => { %>
+            <a href="/topics/<%= slugifyFn(tag) %>.html" rel="tag" title="View articles about <%= tag %>" class="topic <%= slugifyFn(tag) %>"><%= tag %></a><% if (i < page.meta.relatedTags.length - 1) { %><span class="tag-sep">, </span><% } %>
+          <% }); %>
+        </dd>
+      </dl>
+    </footer>
+  <% } %>
+</section>

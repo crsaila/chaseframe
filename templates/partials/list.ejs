@@ -1,0 +1,132 @@
+<!-- templates/list.ejs - Template for article lists -->
+<%- include('./partials/helpers') %>
+
+<% 
+// Get articles to display
+let articles = [];
+
+// If we have explicit list items in the front matter
+if (page.meta.list_items && page.meta.list_items.length) {
+  articles = page.meta.list_items;
+} 
+// Otherwise, get articles from all pages
+else {
+  articles = allPages
+    .filter(p => p.meta.template === 'article' || p.meta.category === 'article')
+    .filter(p => p.isPublished && !p.isDraft)
+    .sort((a, b) => {
+      // Sort by date (newest first)
+      const dateA = a.meta.saved_date ? new Date(a.meta.saved_date) : a.lastModified;
+      const dateB = b.meta.saved_date ? new Date(b.meta.saved_date) : b.lastModified;
+      return dateB - dateA;
+    })
+    .slice(0, page.meta.limit || 10);
+}
+%>
+
+<section class="list-page">
+  <% if (page.meta.title) { %>
+    <h2><%= page.meta.title %></h2>
+  <% } %>
+
+  <% if (page.meta.description) { %>
+    <p class="first"><%= page.meta.description %></p>
+  <% } %>
+
+  <%- page.content %>
+
+  <section class="article-list">
+    <% if (articles.length === 0) { %>
+      <p>No articles found.</p>
+    <% } else { %>
+      <% articles.forEach(function(article) { 
+        // For articles from list_items
+        if (article.title) {
+          const articleId = article.id || `entry${new Date(article.date || new Date()).getFullYear()}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
+          const permalink = article.url || '#';
+      %>
+        <article id="<%= articleId %>" class="list-entry">
+          <header>
+            <h3><a href="<%= permalink %>"><%= article.title %></a></h3>
+            <time datetime="<%= new Date(article.date || new Date()).toISOString() %>">
+              <%= formattedDate(article.date) %>
+            </time>
+          </header>
+          
+          <% if (article.content) { %>
+            <%- article.content %>
+          <% } else if (article.description) { %>
+            <p><%= article.description %></p>
+          <% } %>
+          
+          <% if (article.tags && article.tags.length) { %>
+            <footer class="meta">
+              <dl>
+                <dt><a href="/topics/" class="meta-label"><%= article.tags.length === 1 ? 'Topic' : 'Topics' %></a></dt>
+                <dd>
+                  <%- include('./partials/tags', { 
+                    tags: article.tags, 
+                    slugify: slugify 
+                  }) %>
+                </dd>
+              </dl>
+            </footer>
+          <% } %>
+        </article>
+      <% 
+        } 
+        // For articles from allPages
+        else {
+          const articleId = article.meta.id || `entry${new Date(article.meta.saved_date || article.lastModified).getFullYear()}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
+          const permalink = article.path + (article.meta.anchor ? '#' + article.meta.anchor : '');
+      %>
+        <article id="<%= articleId %>" class="list-entry">
+          <header>
+            <h3><a href="<%= permalink %>.html"><%= article.meta.title %></a></h3>
+            <time datetime="<%= isoDate(article.meta.saved_date || article.lastModified) %>">
+              <%= formattedDate(article.meta.saved_date || article.lastModified) %>
+            </time>
+          </header>
+          
+          <% if (article.meta.description) { %>
+            <p><%= article.meta.description %></p>
+          <% } %>
+          
+          <% if (article.meta.updated_date && article.meta.updated_date !== article.meta.saved_date) { %>
+            <p class="updated-notice">
+              <time datetime="<%= isoDate(article.meta.updated_date) %>">
+                Updated: <%= formattedDate(article.meta.updated_date) %>
+              </time>
+              <% if (article.meta.updateNote) { %>
+                <span class="update-note"><%= article.meta.updateNote %></span>
+              <% } %>
+            </p>
+          <% } %>
+          
+          <% if (article.tags && article.tags.length) { %>
+            <footer class="meta">
+              <dl>
+                <dt><a href="/topics/" class="meta-label"><%= article.tags.length === 1 ? 'Topic' : 'Topics' %></a></dt>
+                <dd>
+                  <%- include('./partials/tags', { 
+                    tags: article.tags, 
+                    slugify: slugify 
+                  }) %>
+                </dd>
+              </dl>
+            </footer>
+          <% } %>
+        </article>
+      <% 
+        }
+      }); 
+      %>
+    <% } %>
+  </section>
+
+  <% if (page.meta.showMore && articles.length >= (page.meta.limit || 10)) { %>
+    <p class="more-link">
+      <a href="<%= page.meta.moreUrl || '/archive/' %>">More articles &rarr;</a>
+    </p>
+  <% } %>
+</section>

@@ -1,0 +1,63 @@
+<!-- templates/static-sidebar.ejs - Static page with right-hand sidebar sections -->
+<% if (page.meta.isAuthorPage) { %>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "<%= site.authorName %>",
+  "url": "<%= site.siteUrl %>about/",
+  "sameAs": [
+    "<%= site.social.mastodonUrl %>",
+    "<%= site.social.githubUrl %>"
+  ]
+}
+</script>
+<% } %>
+<%- include('./partials/helpers') %>
+<%- include('./partials/helper-functions') %>
+
+<div class="static-sidebar-layout">
+  <article class="article-page static-sidebar-content">
+    <%
+      let content = page.content;
+      if (content.indexOf('<p>') === 0) {
+        content = content.replace('<p>', '<p class="first">');
+      }
+    %>
+    <%- content %>
+  </article>
+
+  <% if (page.sidebarSections && page.sidebarSections.length > 0) { %>
+    <aside class="static-sidebar">
+      <% page.sidebarSections.forEach(function(section) { %>
+        <section class="sidebar-section">
+          <% if (section.heading) { %>
+            <h2><%= section.heading %></h2>
+          <% } %>
+          <%- section.content %>
+        </section>
+      <% }); %>
+    </aside>
+  <% } %>
+</div>
+<script>
+  document.querySelectorAll('.sidebar-section a[href*="mastodon"]').forEach(function(el) {
+    el.rel = 'me';
+  });
+  document.querySelectorAll('.sidebar-section code').forEach(function(el) {
+    var text = el.textContent.trim();
+    var mark = document.createElement('mark');
+    var groups = text.split(' ');
+    if (groups.length > 2) {
+      var mid = Math.ceil(groups.length / 2);
+      mark.innerHTML = groups.slice(0, mid).join(' ') + ' <wbr>' + groups.slice(mid).join(' ');
+    } else {
+      mark.textContent = text;
+    }
+    mark.title = 'Click to copy';
+    mark.addEventListener('click', function() {
+      navigator.clipboard.writeText(text);
+    });
+    el.parentNode.replaceChild(mark, el);
+  });
+</script>

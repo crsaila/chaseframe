@@ -1,0 +1,27 @@
+<!-- templates/article.ejs - Template for blog posts/articles -->
+<%- include('./partials/helpers') %>
+
+<article id="<%= generateArticleId(page) %>">
+  <%- include('./partials/article-header', { meta: page.meta, slugify: slugify }) %>
+
+  <!-- Article content with first paragraph styling -->
+  <% 
+    // Split content to apply first paragraph class
+    let content = page.content;
+    if (content.indexOf('<p>') === 0) {
+      content = content.replace('<p>', '<p class="first">');
+    }
+  %>
+  <%- content %>
+
+  <!-- Include metadata footer -->
+  <%- include('./partials/metadata', { 
+    page: page, 
+    config: config, 
+    backlinks: backlinks, 
+    slugify: slugify, 
+    months: months, 
+    formattedDate: formattedDate, 
+    isoDate: isoDate 
+  }) %>
+</article>

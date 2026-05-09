@@ -1,0 +1,88 @@
+<!-- templates/homepage.ejs - Template for the homepage -->
+<%- include('./partials/helpers') %>
+
+<section class="homepage-content">
+  <% if (page.meta.welcomeTitle) { %>
+    <h2><%= page.meta.welcomeTitle %></h2>
+    
+    <% if (page.meta.welcomeText) { %>
+      <p class="first"><%= page.meta.welcomeText %></p>
+    <% } %>
+  <% } %>
+
+  <%- page.content %>
+</section>
+
+<% 
+// Get recent articles - use a helper if available or the code already there
+const recentArticles = allPages
+  .filter(p => p.meta.template === 'article' || p.meta.category === 'article')
+  .filter(p => p.isPublished && !p.isDraft)
+  .sort((a, b) => {
+    // Sort by date (newest first)
+    const dateA = a.meta.saved_date ? new Date(a.meta.saved_date) : a.lastModified;
+    const dateB = b.meta.saved_date ? new Date(b.meta.saved_date) : b.lastModified;
+    return dateB - dateA;
+  })
+  .slice(0, page.meta.limit || 5);
+%>
+
+<% if (recentArticles.length > 0) { %>
+  <section class="recent-articles">
+    <h2>Recent Articles</h2>
+    
+    <% recentArticles.forEach(function(article) { %>
+      <article id="<%= generateArticleId(article) %>" class="recent-article">
+        <header>
+          <h3><a href="<%= article.path %>.html"><%= article.meta.title %></a></h3>
+          <time datetime="<%= isoDate(article.meta.saved_date || article.lastModified) %>">
+            <%= formattedDate(article.meta.saved_date || article.lastModified) %>
+          </time>
+        </header>
+        
+        <% if (article.meta.description) { %>
+          <p><%= article.meta.description %></p>
+        <% } %>
+        
+        <% if (article.tags && article.tags.length) { %>
+          <footer class="meta">
+            <dl>
+              <dt><a href="/topics/" class="meta-label"><%= article.tags.length === 1 ? 'Topic' : 'Topics' %></a></dt>
+              <dd>
+                <%- include('./partials/tags', { 
+                  tags: article.tags, 
+                  slugify: slugify 
+                }) %>
+              </dd>
+            </dl>
+          </footer>
+        <% } %>
+      </article>
+    <% }); %>
+  </section>
+<% } %>
+
+<% if (page.meta.showArchiveLink) { %>
+  <p class="archive-link">
+    <a href="<%= page.meta.archiveUrl || '/archives/' %>">View more posts in the archive &rarr;</a>
+  </p>
+<% } %>
+
+<% if (config && config.showOnThisDay && onThisDayPosts && onThisDayPosts.length > 0) { %>
+  <section class="on-this-day">
+    <h2>On This Day</h2>
+    
+    <% onThisDayPosts.forEach(function(post) {
+      const postDate = new Date(post.meta.saved_date);
+      const yearsAgo = new Date().getFullYear() - postDate.getFullYear();
+    %>
+      <article class="on-this-day-item">
+        <h3><a href="<%= post.path %>"><%= post.meta.title %></a></h3>
+        <p><%= yearsAgo %> <%= yearsAgo === 1 ? 'year' : 'years' %> ago</p>
+        <time datetime="<%= postDate.toISOString() %>">
+          <%= formattedDate(post.meta.saved_date) %>
+        </time>
+      </article>
+    <% }); %>
+  </section>
+<% } %>
